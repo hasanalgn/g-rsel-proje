@@ -16,8 +16,8 @@ public sealed class SupabaseSettingsForm : Form
     {
         _store = store;
         Text = "Supabase Ayarlari";
-        Size = new Size(680, 500);
-        MinimumSize = new Size(620, 460);
+        Size = new Size(680, 640);
+        MinimumSize = new Size(620, 640);
         StartPosition = FormStartPosition.CenterParent;
         Font = ModernUi.BodyFont;
         BackColor = ModernUi.Background;
@@ -36,13 +36,13 @@ public sealed class SupabaseSettingsForm : Form
             BackColor = ModernUi.Background
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 65));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 85));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 85));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 65));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 72));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 65));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         Controls.Add(root);
 
@@ -150,7 +150,7 @@ public sealed class SupabaseSettingsForm : Form
             BackColor = ModernUi.Background,
             Margin = new Padding(0, 0, 0, 8)
         };
-        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+        panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         panel.Controls.Add(ModernUi.Label(labelText, new Font("Segoe UI Semibold", 9.5F), ModernUi.Text), 0, 0);
 

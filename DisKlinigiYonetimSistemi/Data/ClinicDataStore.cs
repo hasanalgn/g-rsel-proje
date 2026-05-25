@@ -271,7 +271,7 @@ public sealed class ClinicDataStore
             Id = "admin-demo",
             UserName = "admin",
             Password = "123456",
-            FullName = "Cagri Cetin",
+            FullName = "Mehmet Sayman",
             Role = UserRole.Admin,
             Email = "admin@ccetyteeth.com",
             Phone = "0212 555 00 00",
