@@ -14,6 +14,7 @@ public sealed class MainForm : Form
     {
         _store = store;
         _currentUser = currentUser;
+        DoubleBuffered = true;
         Text = $"ÇCETY Diş Kliniği - {_currentUser.FullName}";
         WindowState = FormWindowState.Maximized;
         MinimumSize = new Size(1240, 780);
@@ -21,6 +22,7 @@ public sealed class MainForm : Form
         Font = ModernUi.BodyFont;
         BuildShell();
         ShowDashboard();
+        this.EnableDoubleBuffering();
     }
 
     private bool IsPatient => _currentUser.Role == UserRole.Hasta;
@@ -129,11 +131,18 @@ public sealed class MainForm : Form
             Padding = new Padding(28),
             BackColor = ModernUi.Background
         };
-        page.RowStyles.Add(new RowStyle(SizeType.Absolute, 86));
+        page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         page.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         _content.Controls.Add(page);
 
-        var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1 };
+        var header = new TableLayoutPanel 
+        { 
+            Dock = DockStyle.Fill, 
+            ColumnCount = 1,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Margin = new Padding(0, 0, 0, 16)
+        };
         header.Controls.Add(ModernUi.Label(title, ModernUi.TitleFont));
         header.Controls.Add(ModernUi.Label(subtitle, ModernUi.BodyFont, ModernUi.Muted));
         page.Controls.Add(header, 0, 0);
@@ -258,8 +267,13 @@ public sealed class MainForm : Form
         master.Controls.Add(Section("Hasta Listesi", list), 0, 0);
         master.Controls.Add(detailHost, 1, 0);
 
+        Patient? currentRenderedPatient = null;
+
         void Render(Patient patient)
         {
+            if (currentRenderedPatient == patient) return;
+            currentRenderedPatient = patient;
+
             detailHost.Controls.Clear();
             detailHost.Controls.Add(PatientDetail(patient));
         }

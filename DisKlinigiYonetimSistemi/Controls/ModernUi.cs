@@ -111,6 +111,17 @@ public static class ModernUi
         configure(control);
         return control;
     }
+
+    public static void EnableDoubleBuffering(this Control control)
+    {
+        typeof(Control).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            ?.SetValue(control, true);
+        
+        foreach (Control child in control.Controls)
+        {
+            child.EnableDoubleBuffering();
+        }
+    }
 }
 
 public sealed class RoundedPanel : Panel

@@ -186,6 +186,23 @@ public static class EntityEditorForms
 
     private static void AddRows(Form form, params (string Label, Control Control)[] rows)
     {
+        var buttons = new FlowLayoutPanel 
+        { 
+            Dock = DockStyle.Bottom, 
+            Height = 72, 
+            FlowDirection = FlowDirection.RightToLeft,
+            Padding = new Padding(24, 15, 24, 15),
+            BackColor = Color.FromArgb(235, 241, 248)
+        };
+        var save = ModernUi.PrimaryButton("Kaydet");
+        var cancel = ModernUi.FlatButton("Vazgec", Color.FromArgb(230, 236, 244), ModernUi.Text);
+        save.Width = cancel.Width = 120;
+        save.Click += (_, _) => form.DialogResult = DialogResult.OK;
+        cancel.Click += (_, _) => form.DialogResult = DialogResult.Cancel;
+        buttons.Controls.Add(save);
+        buttons.Controls.Add(cancel);
+        form.Controls.Add(buttons);
+
         var panel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -194,6 +211,8 @@ public static class EntityEditorForms
             Padding = new Padding(24)
         };
         form.Controls.Add(panel);
+        panel.BringToFront();
+
         panel.Controls.Add(ModernUi.Label(form.Text, ModernUi.HeaderFont));
         foreach (var row in rows)
         {
@@ -207,15 +226,6 @@ public static class EntityEditorForms
             panel.Controls.Add(row.Control);
         }
 
-        var buttons = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 54, FlowDirection = FlowDirection.RightToLeft };
-        var save = ModernUi.PrimaryButton("Kaydet");
-        var cancel = ModernUi.FlatButton("Vazgec", Color.FromArgb(230, 236, 244), ModernUi.Text);
-        save.Width = cancel.Width = 120;
-        save.Click += (_, _) => form.DialogResult = DialogResult.OK;
-        cancel.Click += (_, _) => form.DialogResult = DialogResult.Cancel;
-        buttons.Controls.Add(save);
-        buttons.Controls.Add(cancel);
-        panel.Controls.Add(buttons);
         form.AcceptButton = save;
         form.CancelButton = cancel;
     }

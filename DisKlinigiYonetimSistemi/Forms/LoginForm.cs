@@ -26,12 +26,15 @@ public sealed class LoginForm : Form
     public LoginForm(ClinicDataStore store)
     {
         _store = store;
+        DoubleBuffered = true;
+        BackColor = Color.FromArgb(16, 28, 46);
         Text = $"{BrandName} Diş Kliniği - Giriş";
         MinimumSize = new Size(1280, 780);
         WindowState = FormWindowState.Maximized;
         StartPosition = FormStartPosition.CenterScreen;
         Font = ModernUi.BodyFont;
         BuildUi();
+        this.EnableDoubleBuffering();
     }
 
     private void BuildUi()
@@ -316,10 +319,8 @@ public sealed class LoginForm : Form
         }
 
         await _store.AddLogAsync(user, "Giriş", $"{user.FullName} sisteme giriş yaptı.");
-        Hide();
         using var dashboard = new MainForm(_store, user);
         dashboard.ShowDialog(this);
-        Show();
         _passwordBox.Clear();
     }
 
