@@ -19,6 +19,13 @@ public sealed class MainForm : Form
         WindowState = FormWindowState.Maximized;
         MinimumSize = new Size(1240, 780);
         BackColor = ModernUi.Background;
+        Opacity = 0; // For fade-in animation
+        Shown += (_, _) =>
+        {
+            var animator = new Animator(250);
+            animator.Start(t => Opacity = t);
+        };
+        
         Font = ModernUi.BodyFont;
         BuildShell();
         ShowDashboard();
@@ -43,7 +50,7 @@ public sealed class MainForm : Form
         {
             Dock = DockStyle.Fill,
             BackColor = Color.FromArgb(25, 34, 54),
-            Padding = new Padding(22)
+            Padding = new Padding(16)
         };
         root.Controls.Add(sidebar, 0, 0);
         root.Controls.Add(_content, 1, 0);
@@ -93,7 +100,7 @@ public sealed class MainForm : Form
         _ => "Hasta portali"
     };
 
-    private static void AddNav(FlowLayoutPanel nav, string text, Action action)
+    private void AddNav(FlowLayoutPanel nav, string text, Action action)
     {
         var button = new Button
         {
@@ -111,7 +118,21 @@ public sealed class MainForm : Form
         };
         button.FlatAppearance.BorderSize = 0;
         button.FlatAppearance.MouseOverBackColor = Color.FromArgb(42, 56, 86);
-        button.Click += (_, _) => action();
+        button.Click += (_, _) => 
+        {
+            if (text != "Cikis Yap")
+            {
+                _content.SuspendDrawing();
+                action();
+                if (_content.Controls.Count > 0)
+                    _content.Controls[0].EnableDoubleBuffering();
+                _content.ResumeDrawing();
+            }
+            else
+            {
+                action();
+            }
+        };
         nav.Controls.Add(button);
     }
 
@@ -128,7 +149,7 @@ public sealed class MainForm : Form
         {
             Dock = DockStyle.Fill,
             RowCount = 2,
-            Padding = new Padding(28),
+            Padding = new Padding(16), // Compact
             BackColor = ModernUi.Background
         };
         page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -153,7 +174,7 @@ public sealed class MainForm : Form
     {
         var page = Page("Ana Panel", DashboardSubtitle());
         var body = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
-        body.RowStyles.Add(new RowStyle(SizeType.Absolute, 170));
+        body.RowStyles.Add(new RowStyle(SizeType.Absolute, 190));
         body.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         page.Controls.Add(body, 0, 1);
 
@@ -264,7 +285,31 @@ public sealed class MainForm : Form
 
         var list = FlowPanel();
         var detailHost = new Panel { Dock = DockStyle.Fill };
-        master.Controls.Add(Section("Hasta Listesi", list), 0, 0);
+        
+        var leftPanel = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
+        leftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, !IsPatient ? 58 : 0));
+        leftPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+        if (!IsPatient)
+        {
+            var toolbar = new FlowLayoutPanel { Dock = DockStyle.Fill };
+            var add = PrimaryAction("Yeni Hasta Ekle", 160);
+            add.Click += async (_, _) => 
+            {
+                var p = EntityEditorForms.Patient(null);
+                if (p is not null)
+                {
+                    _store.Snapshot.Patients.Add(p);
+                    await _store.AddLogAsync(_currentUser, "Hasta Kaydi", $"{p.FullName} sisteme eklendi.", p.Id);
+                    ShowPatientFiles();
+                }
+            };
+            toolbar.Controls.Add(add);
+            leftPanel.Controls.Add(toolbar, 0, 0);
+        }
+        leftPanel.Controls.Add(Section("Hasta Listesi", list), 0, 1);
+
+        master.Controls.Add(leftPanel, 0, 0);
         master.Controls.Add(detailHost, 1, 0);
 
         Patient? currentRenderedPatient = null;
@@ -315,6 +360,40 @@ public sealed class MainForm : Form
             edit.Margin = new Padding(0, 10, 0, 0);
             edit.Click += (_, _) => EditCurrentPatient(patient);
             emergencyInfo.Add(edit);
+        }
+        else
+        {
+            var edit = PrimaryAction("Bilgileri Duzenle", 180);
+            edit.Margin = new Padding(0, 10, 0, 0);
+            edit.Click += async (_, _) => 
+            {
+                var p = EntityEditorForms.Patient(patient);
+                if (p is not null)
+                {
+                    var idx = _store.Snapshot.Patients.FindIndex(x => x.Id == patient.Id);
+                    if (idx >= 0) _store.Snapshot.Patients[idx] = p;
+                    await _store.AddLogAsync(_currentUser, "Bilgi Guncelleme", $"{p.FullName} bilgileri guncellendi.", p.Id);
+                    ShowPatientFiles();
+                }
+            };
+            emergencyInfo.Add(edit);
+
+            if (IsAdmin || IsDoctor)
+            {
+                var del = PrimaryAction("Hastayi Sil", 180);
+                del.BackColor = ModernUi.Danger;
+                del.Margin = new Padding(0, 10, 0, 0);
+                del.Click += async (_, _) => 
+                {
+                    if (MessageBox.Show($"{patient.FullName} adli hastayi silmek istediginize emin misiniz?", "Onay", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                    {
+                        _store.Snapshot.Patients.Remove(patient);
+                        await _store.AddLogAsync(_currentUser, "Hasta Silme", $"{patient.FullName} silindi.");
+                        ShowPatientFiles();
+                    }
+                };
+                emergencyInfo.Add(del);
+            }
         }
         profileGrid.Controls.Add(Stack(emergencyInfo.ToArray()), 3, 0);
         profile.Controls.Add(profileGrid);
@@ -424,12 +503,37 @@ public sealed class MainForm : Form
     private void ShowStaff()
     {
         var page = Page("Ekip Profilleri", "Her doktorun sorumlu sekreteri ve klinik profili.");
+        
+        var body = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
+        body.RowStyles.Add(new RowStyle(SizeType.Absolute, IsAdmin ? 58 : 0));
+        body.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+        if (IsAdmin)
+        {
+            var toolbar = new FlowLayoutPanel { Dock = DockStyle.Fill };
+            var add = PrimaryAction("Yeni Doktor Ekle", 160);
+            add.Click += async (_, _) => 
+            {
+                var d = EntityEditorForms.Doctor(null);
+                if (d is not null)
+                {
+                    _store.Snapshot.Users.Add(d);
+                    await _store.AddLogAsync(_currentUser, "Doktor Ekleme", $"{d.FullName} sisteme eklendi.", null, d.Id);
+                    ShowStaff();
+                }
+            };
+            toolbar.Controls.Add(add);
+            body.Controls.Add(toolbar, 0, 0);
+        }
+
         var flow = FlowPanel();
-        foreach (var doctor in _store.Doctors)
+        var allDoctors = _store.Snapshot.Users.Where(u => u.Role == UserRole.Doktor).OrderByDescending(u => u.Active).ThenBy(u => u.FullName).ToList();
+        foreach (var doctor in allDoctors)
         {
             flow.Controls.Add(DoctorCard(doctor));
         }
-        page.Controls.Add(Section("Doktor - Sekreter Eslesmeleri", flow), 0, 1);
+        body.Controls.Add(Section("Doktor - Sekreter Eslesmeleri", flow), 0, 1);
+        page.Controls.Add(body, 0, 1);
     }
 
     private void ShowLogs()
@@ -698,13 +802,40 @@ public sealed class MainForm : Form
         var secretary = _store.Secretaries.FirstOrDefault(sec => sec.AssignedDoctorUserId == doctor.Id);
         var card = ModernUi.Card();
         card.Width = 500;
-        card.Height = 290;
-        card.Controls.Add(Stack(
-            ModernUi.Label(doctor.FullName, new Font("Segoe UI Semibold", 18F), ModernUi.Text),
+        card.Height = 480;
+        
+        var stack = (FlowLayoutPanel)Stack(
+            ModernUi.Label(doctor.FullName + (doctor.Active ? "" : " (Pasif)"), new Font("Segoe UI Semibold", 18F), doctor.Active ? ModernUi.Text : ModernUi.Danger),
             ModernUi.Label($"{doctor.Specialty} - Oda {doctor.RoomName}", ModernUi.HeaderFont, ModernUi.Primary),
             ModernUi.Label(doctor.Biography, ModernUi.BodyFont, ModernUi.Text),
             InfoBlock("Sekreter", secretary is null ? "Atanmamis" : $"{secretary.FullName} / {secretary.Phone}"),
-            InfoBlock("Iletisim", $"{doctor.Email} / {doctor.Phone}")));
+            InfoBlock("Iletisim", $"{doctor.Email} / {doctor.Phone}"));
+            
+        stack.Dock = DockStyle.Top;
+        stack.AutoSize = true;
+        stack.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            
+        if (IsAdmin)
+        {
+            var btnColor = doctor.Active ? ModernUi.Danger : ModernUi.Accent;
+            var edit = ActionButton(doctor.Active ? "Doktoru Sil (Pasifize Et)" : "Doktoru Aktifleştir", 240, btnColor);
+            edit.Margin = new Padding(0, 15, 0, 0);
+            edit.Click += async (_, _) => 
+            {
+                var msg = doctor.Active ? "pasifize etmek" : "aktifleştirmek";
+                if (MessageBox.Show($"{doctor.FullName} adli doktoru {msg} istediginize emin misiniz?", "Onay", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                {
+                    doctor.Active = !doctor.Active;
+                    var logAct = doctor.Active ? "Doktor Aktifleştirme" : "Doktor Silme";
+                    var logMsg = doctor.Active ? "hesabi aktifleştirildi." : "hesabi pasifize edildi.";
+                    await _store.AddLogAsync(_currentUser, logAct, $"{doctor.FullName} {logMsg}", null, doctor.Id);
+                    ShowStaff();
+                }
+            };
+            stack.Controls.Add(edit);
+        }
+            
+        card.Controls.Add(stack);
         return card;
     }
 
@@ -776,6 +907,13 @@ public sealed class MainForm : Form
         return button;
     }
 
+    private Button ActionButton(string text, int width, Color backColor)
+    {
+        var button = ModernUi.FlatButton(text, backColor, Color.White);
+        button.Width = width;
+        return button;
+    }
+
     private Control Section(string title, Control content)
     {
         var card = ModernUi.Card();
@@ -805,6 +943,7 @@ public sealed class MainForm : Form
         }
         return panel;
     }
+
 
     private FlowLayoutPanel FlowPanel() => new()
     {

@@ -33,6 +33,12 @@ public sealed class LoginForm : Form
         WindowState = FormWindowState.Maximized;
         StartPosition = FormStartPosition.CenterScreen;
         Font = ModernUi.BodyFont;
+        Opacity = 0; // For fade-in
+        Shown += (_, _) =>
+        {
+            var animator = new Animator(250);
+            animator.Start(t => Opacity = t);
+        };
         BuildUi();
         this.EnableDoubleBuffering();
     }

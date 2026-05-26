@@ -184,14 +184,34 @@ public static class EntityEditorForms
         };
     }
 
+    private static void AddDialogButtons(Form form)
+    {
+        var buttons = new FlowLayoutPanel 
+        { 
+            Dock = DockStyle.Bottom, 
+            Height = 60,
+            FlowDirection = FlowDirection.RightToLeft,
+            Padding = new Padding(16, 12, 16, 12),
+            BackColor = Color.FromArgb(235, 241, 248)
+        };
+        var save = ModernUi.PrimaryButton("Kaydet");
+        var cancel = ModernUi.FlatButton("Vazgec", Color.FromArgb(230, 236, 244), ModernUi.Text);
+        save.Width = cancel.Width = 120;
+        save.Click += (_, _) => form.DialogResult = DialogResult.OK;
+        cancel.Click += (_, _) => form.DialogResult = DialogResult.Cancel;
+        buttons.Controls.Add(save);
+        buttons.Controls.Add(cancel);
+        form.Controls.Add(buttons);
+    }
+
     private static void AddRows(Form form, params (string Label, Control Control)[] rows)
     {
         var buttons = new FlowLayoutPanel 
         { 
             Dock = DockStyle.Bottom, 
-            Height = 72, 
+            Height = 60, // Compact height
             FlowDirection = FlowDirection.RightToLeft,
-            Padding = new Padding(24, 15, 24, 15),
+            Padding = new Padding(16, 12, 16, 12),
             BackColor = Color.FromArgb(235, 241, 248)
         };
         var save = ModernUi.PrimaryButton("Kaydet");
@@ -208,7 +228,7 @@ public static class EntityEditorForms
             Dock = DockStyle.Fill,
             ColumnCount = 1,
             AutoScroll = true,
-            Padding = new Padding(24)
+            Padding = new Padding(16)
         };
         form.Controls.Add(panel);
         panel.BringToFront();
@@ -247,6 +267,19 @@ public static class EntityEditorForms
         }
 
         return box;
+    }
+
+    private static Control Wrap(string label, Control control)
+    {
+        var panel = new Panel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = new Padding(0, 5, 0, 10) };
+        var lbl = ModernUi.Label(label, ModernUi.BodyFont, ModernUi.Muted);
+        lbl.AutoSize = true;
+        lbl.Dock = DockStyle.Top;
+        lbl.Padding = new Padding(0, 0, 0, 5);
+        control.Dock = DockStyle.Top;
+        panel.Controls.Add(control);
+        panel.Controls.Add(lbl);
+        return panel;
     }
 
     private static NumericUpDown Number(decimal value, decimal min, decimal max)
@@ -338,5 +371,130 @@ public static class EntityEditorForms
         ProcedureName = item.ProcedureName,
         Description = item.Description,
         Completed = item.Completed
+    };
+
+    public static Patient? Patient(Patient? source)
+    {
+        var entity = source is null ? new Patient() : Clone(source);
+        using var form = Dialog("Hasta Bilgisi", 560, 640);
+        
+        var tcBox = Text(entity.TcNo, "");
+        var nameBox = Text(entity.FullName, "");
+        var genderBox = Combo(Enum.GetNames<Gender>().Select(x => new LookupItem(x, x)).ToList(), entity.Gender.ToString());
+        var phoneBox = Text(entity.Phone, "");
+        var emailBox = Text(entity.Email, "");
+        var dateBox = new DateTimePicker { Format = DateTimePickerFormat.Custom, CustomFormat = "dd.MM.yyyy", Value = entity.BirthDate, Font = ModernUi.BodyFont };
+        var bloodBox = Text(entity.BloodType, "");
+        
+        var layout = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 2, RowCount = 4, Padding = new Padding(16) };
+        for (var i = 0; i < 2; i++) layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        
+        layout.Controls.Add(Wrap("TC Kimlik No", tcBox), 0, 0); layout.Controls.Add(Wrap("Ad Soyad", nameBox), 1, 0);
+        layout.Controls.Add(Wrap("Cinsiyet", genderBox), 0, 1); layout.Controls.Add(Wrap("Telefon", phoneBox), 1, 1);
+        layout.Controls.Add(Wrap("E-Posta", emailBox), 0, 2); layout.Controls.Add(Wrap("Dogum Tarihi", dateBox), 1, 2);
+        layout.Controls.Add(Wrap("Kan Grubu", bloodBox), 0, 3);
+
+        form.Controls.Add(layout);
+        AddDialogButtons(form);
+
+        if (form.ShowDialog() == DialogResult.OK)
+        {
+            if (string.IsNullOrWhiteSpace(nameBox.Text)) { MessageBox.Show("Ad soyad zorunludur.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error); return null; }
+            entity.TcNo = tcBox.Text;
+            entity.FullName = nameBox.Text;
+            entity.Gender = Enum.Parse<Gender>(genderBox.SelectedValue?.ToString() ?? "Belirtilmedi");
+            entity.Phone = phoneBox.Text;
+            entity.Email = emailBox.Text;
+            entity.BirthDate = dateBox.Value;
+            entity.BloodType = bloodBox.Text;
+            return entity;
+        }
+        return null;
+    }
+
+    public static UserAccount? Doctor(UserAccount? source)
+    {
+        var entity = source is null ? new UserAccount { Role = UserRole.Doktor } : Clone(source);
+        using var form = Dialog("Doktor Bilgisi", 560, 560);
+        
+        var nameBox = Text(entity.FullName, "");
+        var specBox = Text(entity.Specialty, "");
+        var emailBox = Text(entity.Email, "");
+        var passBox = Text(entity.Password, "");
+        var phoneBox = Text(entity.Phone, "");
+        var roomBox = Text(entity.RoomName, "");
+        
+        var layout = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 2, RowCount = 3, Padding = new Padding(16) };
+        for (var i = 0; i < 2; i++) layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        
+        layout.Controls.Add(Wrap("Ad Soyad", nameBox), 0, 0); layout.Controls.Add(Wrap("Uzmanlik Alani", specBox), 1, 0);
+        layout.Controls.Add(Wrap("E-Posta (Giris ID)", emailBox), 0, 1); layout.Controls.Add(Wrap("Sifre", passBox), 1, 1);
+        layout.Controls.Add(Wrap("Telefon", phoneBox), 0, 2); layout.Controls.Add(Wrap("Oda Ismi", roomBox), 1, 2);
+
+        form.Controls.Add(layout);
+        AddDialogButtons(form);
+
+        if (form.ShowDialog() == DialogResult.OK)
+        {
+            if (string.IsNullOrWhiteSpace(nameBox.Text)) { MessageBox.Show("Ad soyad zorunludur.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error); return null; }
+            if (string.IsNullOrWhiteSpace(emailBox.Text)) { MessageBox.Show("E-posta zorunludur.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error); return null; }
+            
+            entity.FullName = nameBox.Text;
+            entity.Specialty = specBox.Text;
+            entity.Email = emailBox.Text;
+            entity.Password = passBox.Text;
+            entity.Phone = phoneBox.Text;
+            entity.RoomName = roomBox.Text;
+            return entity;
+        }
+        return null;
+    }
+
+    private static Patient Clone(Patient item) => new()
+    {
+        Id = item.Id,
+        TcNo = item.TcNo,
+        FullName = item.FullName,
+        Gender = item.Gender,
+        BirthDate = item.BirthDate,
+        Phone = item.Phone,
+        Email = item.Email,
+        Address = item.Address,
+        BloodType = item.BloodType,
+        HeightCm = item.HeightCm,
+        WeightKg = item.WeightKg,
+        AllergyNotes = item.AllergyNotes,
+        ChronicDiseases = item.ChronicDiseases,
+        CurrentMedications = item.CurrentMedications,
+        SmokingStatus = item.SmokingStatus,
+        EmergencyContactName = item.EmergencyContactName,
+        EmergencyContactPhone = item.EmergencyContactPhone,
+        DentalHistory = item.DentalHistory,
+        RiskLevel = item.RiskLevel,
+        CreatedAt = item.CreatedAt
+    };
+
+    private static UserAccount Clone(UserAccount item) => new()
+    {
+        Id = item.Id,
+        UserName = item.UserName,
+        Password = item.Password,
+        FullName = item.FullName,
+        Role = item.Role,
+        Specialty = item.Specialty,
+        Email = item.Email,
+        Phone = item.Phone,
+        Biography = item.Biography,
+        RoomName = item.RoomName,
+        AssignedDoctorUserId = item.AssignedDoctorUserId,
+        LinkedPatientId = item.LinkedPatientId,
+        Active = item.Active
     };
 }

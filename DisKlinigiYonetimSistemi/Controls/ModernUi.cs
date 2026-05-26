@@ -1,10 +1,11 @@
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 
 namespace DisKlinigiYonetimSistemi.Controls;
 
 public static class ModernUi
 {
-    public static readonly Color Background = Color.FromArgb(244, 247, 251);
+    public static readonly Color Background = Color.FromArgb(220, 235, 250);
     public static readonly Color Surface = Color.White;
     public static readonly Color Text = Color.FromArgb(28, 37, 54);
     public static readonly Color Muted = Color.FromArgb(106, 116, 133);
@@ -26,20 +27,46 @@ public static class ModernUi
 
     public static Button FlatButton(string text, Color backColor, Color foreColor)
     {
-        return new Button
+        var button = new Button
         {
             Text = text,
             BackColor = backColor,
             ForeColor = foreColor,
             FlatStyle = FlatStyle.Flat,
-            Height = 42,
+            Height = 36, // Compact
             Cursor = Cursors.Hand,
             Font = BodyFont,
             Margin = new Padding(0, 4, 0, 4)
-        }.With(button =>
+        };
+        button.FlatAppearance.BorderSize = 0;
+
+        // Hover Animation
+        var animator = new Animator(150);
+        var targetColor = backColor;
+        var currentColor = backColor;
+
+        void UpdateColor(float amount)
         {
-            button.FlatAppearance.BorderSize = 0;
-        });
+            button.BackColor = Animator.Blend(currentColor, targetColor, amount);
+        }
+
+        button.MouseEnter += (_, _) =>
+        {
+            currentColor = button.BackColor;
+            targetColor = Animator.Blend(backColor, Color.Black, 0.15f); // Darken by 15%
+            animator.Start(UpdateColor);
+        };
+
+        button.MouseLeave += (_, _) =>
+        {
+            currentColor = button.BackColor;
+            targetColor = backColor;
+            animator.Start(UpdateColor);
+        };
+
+        button.Disposed += (_, _) => animator.Dispose();
+
+        return button;
     }
 
     public static Label Label(string text, Font? font = null, Color? color = null)
@@ -92,7 +119,7 @@ public static class ModernUi
         grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 9.5F);
         grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(218, 234, 255);
         grid.DefaultCellStyle.SelectionForeColor = Text;
-        grid.RowTemplate.Height = 36;
+        grid.RowTemplate.Height = 32; // Compact
         return grid;
     }
 
@@ -101,8 +128,8 @@ public static class ModernUi
         return new RoundedPanel
         {
             BackColor = Surface,
-            Padding = new Padding(18),
-            Margin = new Padding(8)
+            Padding = new Padding(12), // Compact
+            Margin = new Padding(6)    // Compact
         };
     }
 
@@ -114,13 +141,26 @@ public static class ModernUi
 
     public static void EnableDoubleBuffering(this Control control)
     {
-        typeof(Control).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-            ?.SetValue(control, true);
-        
+        typeof(Control).InvokeMember("DoubleBuffered", System.Reflection.BindingFlags.SetProperty | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic, null, control, new object[] { true });
         foreach (Control child in control.Controls)
         {
             child.EnableDoubleBuffering();
         }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern int SendMessage(IntPtr hWnd, int wMsg, bool wParam, int lParam);
+    private const int WM_SETREDRAW = 11;
+
+    public static void SuspendDrawing(this Control control)
+    {
+        SendMessage(control.Handle, WM_SETREDRAW, false, 0);
+    }
+
+    public static void ResumeDrawing(this Control control)
+    {
+        SendMessage(control.Handle, WM_SETREDRAW, true, 0);
+        control.Refresh();
     }
 }
 
