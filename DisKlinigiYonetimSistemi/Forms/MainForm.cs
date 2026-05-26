@@ -759,7 +759,7 @@ public sealed class MainForm : Form
     {
         var card = ModernUi.Card();
         card.Width = 470;
-        card.Height = 320;
+        card.Height = 420;
         card.Controls.Add(Stack(
             ModernUi.Label(prescription.Topic, ModernUi.HeaderFont),
             ModernUi.Label($"{_store.PatientName(prescription.PatientId)} - {_store.DoctorName(prescription.DoctorUserId)} - {prescription.Date:dd.MM.yyyy}", ModernUi.SmallFont, ModernUi.Muted),
