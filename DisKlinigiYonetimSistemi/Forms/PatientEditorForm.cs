@@ -26,14 +26,13 @@ public sealed class PatientEditorForm : Form
     private readonly TextBox _emergencyPhone = ModernUi.TextBox("Acil telefon");
     private readonly TextBox _dentalHistory = ModernUi.TextBox("Diş geçmişi");
     private readonly TextBox _riskLevel = ModernUi.TextBox("Risk seviyesi");
-    private readonly TextBox _userName = ModernUi.TextBox("Kullanıcı adı");
     private readonly TextBox _password = ModernUi.TextBox("Şifre", true);
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Patient? Patient { get; private set; }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public string CreatedUserName => _userName.Text.Trim();
+    public string CreatedUserName => _tcNo.Text.Trim();
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public string CreatedPassword => _password.Text;
@@ -42,8 +41,8 @@ public sealed class PatientEditorForm : Form
     {
         _withAccount = withAccount;
         Patient = patient is null ? new Patient() : Clone(patient);
-        Text = patient is null ? "Hasta Kaydi" : "Hasta Duzenle";
-        Size = new Size(620, withAccount ? 820 : 760);
+        Text = patient is null ? "Hasta Kaydı" : "Hasta Düzenle";
+        Size = new Size(620, withAccount ? 520 : 760);
         MinimumSize = Size;
         StartPosition = FormStartPosition.CenterParent;
         BackColor = ModernUi.Background;
@@ -71,34 +70,36 @@ public sealed class PatientEditorForm : Form
         panel.Controls.Add(ModernUi.Label(Text, ModernUi.HeaderFont));
         AddField(panel, "TC No", _tcNo);
         AddField(panel, "Ad Soyad", _fullName);
-        AddField(panel, "Cinsiyet", _gender);
-        AddField(panel, "Dogum Tarihi", _birthDate);
         AddField(panel, "Telefon", _phone);
         AddField(panel, "E-posta", _email);
-        AddField(panel, "Adres", _address);
-        AddField(panel, "Kan Grubu", _bloodType);
-        AddField(panel, "Boy (cm)", _height);
-        AddField(panel, "Kilo (kg)", _weight);
-        AddField(panel, "Alerji Notlari", _allergy);
-        AddField(panel, "Kronik Hastalıklar", _chronic);
-        AddField(panel, "Kullandığı İlaçlar", _currentMedications);
-        AddField(panel, "Sigara", _smoking);
-        AddField(panel, "Acil Kisi", _emergencyName);
-        AddField(panel, "Acil Telefon", _emergencyPhone);
-        AddField(panel, "Diş Geçmişi", _dentalHistory);
-        AddField(panel, "Risk Seviyesi", _riskLevel);
 
         if (_withAccount)
         {
-            _userName.Text = SuggestUserName(store);
             _password.Text = "123456";
-            AddField(panel, "Portal Kullanıcı Adı", _userName);
-            AddField(panel, "Portal Şifresi", _password);
+            panel.Controls.Add(ModernUi.Label("Sağlık bilgilerinizi giriş yaptıktan sonra Klinik Dosyam ekranından güncelleyebilirsiniz.", ModernUi.SmallFont, ModernUi.Muted));
+            AddField(panel, "Şifre", _password);
+        }
+        else
+        {
+            AddField(panel, "Cinsiyet", _gender);
+            AddField(panel, "Doğum Tarihi", _birthDate);
+            AddField(panel, "Adres", _address);
+            AddField(panel, "Kan Grubu", _bloodType);
+            AddField(panel, "Boy (cm)", _height);
+            AddField(panel, "Kilo (kg)", _weight);
+            AddField(panel, "Alerji Notları", _allergy);
+            AddField(panel, "Kronik Hastalıklar", _chronic);
+            AddField(panel, "Kullandığı İlaçlar", _currentMedications);
+            AddField(panel, "Sigara", _smoking);
+            AddField(panel, "Acil Kişi", _emergencyName);
+            AddField(panel, "Acil Telefon", _emergencyPhone);
+            AddField(panel, "Diş Geçmişi", _dentalHistory);
+            AddField(panel, "Risk Seviyesi", _riskLevel);
         }
 
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 54, FlowDirection = FlowDirection.RightToLeft };
         var save = ModernUi.PrimaryButton("Kaydet");
-        var cancel = ModernUi.FlatButton("Vazgec", Color.FromArgb(230, 236, 244), ModernUi.Text);
+        var cancel = ModernUi.FlatButton("Vazgeç", Color.FromArgb(230, 236, 244), ModernUi.Text);
         save.Width = cancel.Width = 120;
         save.Click += (_, _) => SaveAndClose(store);
         cancel.Click += (_, _) => DialogResult = DialogResult.Cancel;
@@ -145,22 +146,34 @@ public sealed class PatientEditorForm : Form
         if (Patient is null) return;
         if (string.IsNullOrWhiteSpace(_fullName.Text))
         {
-            MessageBox.Show("Ad soyad bos olamaz.", "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show("Ad soyad boş olamaz.", "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
-        if (_withAccount && (string.IsNullOrWhiteSpace(_userName.Text) || string.IsNullOrWhiteSpace(_password.Text)))
+        if (_withAccount && string.IsNullOrWhiteSpace(_tcNo.Text))
         {
-            MessageBox.Show("Hasta portalı icin kullanici adi ve sifre girin.", "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show("TC kimlik no boş olamaz.", "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
-        if (_withAccount && store.Snapshot.Users.Any(user => user.UserName.Equals(_userName.Text.Trim(), StringComparison.OrdinalIgnoreCase)))
+        if (_withAccount && string.IsNullOrWhiteSpace(_email.Text))
         {
-            MessageBox.Show("Bu kullanıcı adı zaten var.", "Kayıt Uyarisi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show("E-posta boş olamaz.", "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
+        if (_withAccount && string.IsNullOrWhiteSpace(_password.Text))
+        {
+            MessageBox.Show("Hasta portalı için şifre girin.", "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        if (_withAccount && store.Snapshot.Patients.Any(patient => patient.TcNo.Equals(_tcNo.Text.Trim(), StringComparison.OrdinalIgnoreCase)))
+        {
+            MessageBox.Show("Bu TC kimlik numarasıyla kayıtlı bir hasta zaten var.", "Kayıt Uyarısı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+    
         Patient.TcNo = _tcNo.Text.Trim();
         Patient.FullName = _fullName.Text.Trim();
         Patient.Gender = Enum.TryParse<Gender>(_gender.Text, out var gender) ? gender : Gender.Belirtilmedi;
@@ -180,12 +193,6 @@ public sealed class PatientEditorForm : Form
         Patient.DentalHistory = _dentalHistory.Text.Trim();
         Patient.RiskLevel = _riskLevel.Text.Trim();
         DialogResult = DialogResult.OK;
-    }
-
-    private static string SuggestUserName(ClinicDataStore store)
-    {
-        var number = store.Snapshot.Users.Count(user => user.Role == UserRole.Hasta) + 1;
-        return $"hasta{number}";
     }
 
     private static Patient Clone(Patient patient) => new()

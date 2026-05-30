@@ -67,12 +67,29 @@ public sealed class ClinicDataStore
         }
     }
 
-    public UserAccount? Authenticate(string userName, string password)
+    public UserAccount? Authenticate(string login, string password)
     {
+        var normalizedLogin = login.Trim();
         return Snapshot.Users.FirstOrDefault(user =>
             user.Active &&
-            user.UserName.Equals(userName.Trim(), StringComparison.OrdinalIgnoreCase) &&
+            MatchesLogin(user, normalizedLogin) &&
             user.Password == password);
+    }
+
+    private bool MatchesLogin(UserAccount user, string login)
+    {
+        if (user.UserName.Equals(login, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (user.Role != UserRole.Hasta || string.IsNullOrWhiteSpace(user.LinkedPatientId))
+        {
+            return false;
+        }
+
+        var patient = Snapshot.Patients.FirstOrDefault(item => item.Id == user.LinkedPatientId);
+        return patient is not null && patient.TcNo.Equals(login, StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task SaveAsync()
@@ -105,6 +122,18 @@ public sealed class ClinicDataStore
             PatientId = patientId,
             DoctorUserId = doctorUserId,
             Description = description
+        });
+        await SaveAsync();
+    }
+
+    public async Task AddNotificationAsync(string patientId, string title, string body, string emailTo = "")
+    {
+        Snapshot.Notifications.Insert(0, new NotificationMessage
+        {
+            PatientId = patientId,
+            Title = title,
+            Body = body,
+            EmailTo = emailTo
         });
         await SaveAsync();
     }

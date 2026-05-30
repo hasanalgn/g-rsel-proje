@@ -11,7 +11,7 @@ public sealed class LoginForm : Form
     private const string BrandName = "\u00C7CETY";
     private const string ClinicName = "Diş Kliniği";
     private readonly ClinicDataStore _store;
-    private readonly TextBox _userNameBox = InputTextBox("Kullanıcı adı");
+    private readonly TextBox _userNameBox = InputTextBox("TC veya kullanıcı adı");
     private readonly TextBox _passwordBox = InputTextBox("Şifre", true);
     private readonly CheckBox _showPassword = new()
     {
@@ -154,7 +154,7 @@ public sealed class LoginForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 13,
+            RowCount = 14,
             BackColor = Color.Transparent
         };
         stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -168,6 +168,7 @@ public sealed class LoginForm : Form
         stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
         stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
+        stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
         stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 70));
         stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
         stack.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -178,7 +179,7 @@ public sealed class LoginForm : Form
         stack.Controls.Add(Centered("Klinik Girişi", new Font("Segoe UI Semibold", 30F), Color.White), 0, 1);
         stack.Controls.Add(Centered("Rolüne uygun panele güvenli geçiş yap", new Font("Segoe UI", 11F), Color.FromArgb(195, 212, 232)), 0, 2);
         stack.Controls.Add(new Panel { BackColor = Color.Transparent }, 0, 3);
-        stack.Controls.Add(TextLabel("Kullanıcı Adı", new Font("Segoe UI Semibold", 9.8F), Color.White), 0, 4);
+        stack.Controls.Add(TextLabel("TC / Kullanıcı Adı", new Font("Segoe UI Semibold", 9.8F), Color.White), 0, 4);
         stack.Controls.Add(InputShell(_userNameBox), 0, 5);
         stack.Controls.Add(TextLabel("Şifre", new Font("Segoe UI Semibold", 9.8F), Color.White), 0, 6);
         stack.Controls.Add(InputShell(_passwordBox), 0, 7);
@@ -199,15 +200,31 @@ public sealed class LoginForm : Form
         loginButton.Click += async (_, _) => await TryLogin();
         stack.Controls.Add(loginButton, 0, 9);
 
-        stack.Controls.Add(RoleShortcuts(), 0, 10);
+        var registerButton = new Button
+        {
+            Text = "Yeni Hasta Hesabı Oluştur",
+            Dock = DockStyle.Fill,
+            Height = 42,
+            BackColor = Color.FromArgb(45, 61, 94),
+            ForeColor = Color.FromArgb(224, 235, 248),
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI Semibold", 10.5F),
+            Cursor = Cursors.Hand,
+            Margin = new Padding(0, 8, 0, 4)
+        };
+        registerButton.FlatAppearance.BorderSize = 0;
+        registerButton.Click += (_, _) => RegisterPatient();
+        stack.Controls.Add(registerButton, 0, 10);
+
+        stack.Controls.Add(RoleShortcuts(), 0, 11);
         stack.Controls.Add(_message.With(label =>
         {
             label.Dock = DockStyle.Fill;
             label.TextAlign = ContentAlignment.MiddleCenter;
-        }), 0, 11);
+        }), 0, 12);
 
-        var footer = Centered("Demo sifre: 123456   |   v4.0", ModernUi.SmallFont, Color.FromArgb(168, 185, 208));
-        stack.Controls.Add(footer, 0, 12);
+        var footer = Centered("Demo şifre: 123456   |   v4.0", ModernUi.SmallFont, Color.FromArgb(168, 185, 208));
+        stack.Controls.Add(footer, 0, 13);
 
         AcceptButton = loginButton;
         _showPassword.CheckedChanged += (_, _) => _passwordBox.UseSystemPasswordChar = !_showPassword.Checked;
@@ -342,7 +359,7 @@ public sealed class LoginForm : Form
         _store.Snapshot.Patients.Add(patient);
         var user = new UserAccount
         {
-            UserName = dialog.CreatedUserName,
+            UserName = patient.TcNo,
             Password = dialog.CreatedPassword,
             FullName = patient.FullName,
             Role = UserRole.Hasta,
@@ -351,9 +368,12 @@ public sealed class LoginForm : Form
             LinkedPatientId = patient.Id
         };
         _store.Snapshot.Users.Add(user);
-        await _store.AddLogAsync(user, "Hasta Kaydi", $"{patient.FullName} hasta portali uzerinden kayit oldu.", patient.Id);
+        await _store.AddLogAsync(user, "Hasta Kaydı", $"{patient.FullName} hasta portalı üzerinden kayıt oldu.", patient.Id);
+        await _store.AddNotificationAsync(patient.Id, "Hasta hesabınız oluşturuldu", $"Giriş için TC kimlik numaranızı ({patient.TcNo}) ve belirlediğiniz şifreyi kullanabilirsiniz.", patient.Email);
+        _userNameBox.Text = patient.TcNo;
+        _passwordBox.Text = dialog.CreatedPassword;
         _message.ForeColor = ModernUi.Accent;
-        _message.Text = $"Kayıt tamamlandı. Kullanıcı adınız: {dialog.CreatedUserName}";
+        _message.Text = $"Kayıt tamamlandı. TC kimlik numaranızla giriş yapabilirsiniz.";
     }
 
     private sealed class LoginSurface : Panel

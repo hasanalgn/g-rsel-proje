@@ -195,7 +195,7 @@ public static class EntityEditorForms
             BackColor = Color.FromArgb(235, 241, 248)
         };
         var save = ModernUi.PrimaryButton("Kaydet");
-        var cancel = ModernUi.FlatButton("Vazgec", Color.FromArgb(230, 236, 244), ModernUi.Text);
+        var cancel = ModernUi.FlatButton("Vazgeç", Color.FromArgb(230, 236, 244), ModernUi.Text);
         save.Width = cancel.Width = 120;
         save.Click += (_, _) => form.DialogResult = DialogResult.OK;
         cancel.Click += (_, _) => form.DialogResult = DialogResult.Cancel;
@@ -215,7 +215,7 @@ public static class EntityEditorForms
             BackColor = Color.FromArgb(235, 241, 248)
         };
         var save = ModernUi.PrimaryButton("Kaydet");
-        var cancel = ModernUi.FlatButton("Vazgec", Color.FromArgb(230, 236, 244), ModernUi.Text);
+        var cancel = ModernUi.FlatButton("Vazgeç", Color.FromArgb(230, 236, 244), ModernUi.Text);
         save.Width = cancel.Width = 120;
         save.Click += (_, _) => form.DialogResult = DialogResult.OK;
         cancel.Click += (_, _) => form.DialogResult = DialogResult.Cancel;
@@ -395,7 +395,7 @@ public static class EntityEditorForms
         
         layout.Controls.Add(Wrap("TC Kimlik No", tcBox), 0, 0); layout.Controls.Add(Wrap("Ad Soyad", nameBox), 1, 0);
         layout.Controls.Add(Wrap("Cinsiyet", genderBox), 0, 1); layout.Controls.Add(Wrap("Telefon", phoneBox), 1, 1);
-        layout.Controls.Add(Wrap("E-Posta", emailBox), 0, 2); layout.Controls.Add(Wrap("Dogum Tarihi", dateBox), 1, 2);
+        layout.Controls.Add(Wrap("E-Posta", emailBox), 0, 2); layout.Controls.Add(Wrap("Doğum Tarihi", dateBox), 1, 2);
         layout.Controls.Add(Wrap("Kan Grubu", bloodBox), 0, 3);
 
         form.Controls.Add(layout);

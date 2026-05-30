@@ -50,7 +50,7 @@ public sealed class SupabaseSettingsForm : Form
         root.Controls.Add(Field("Project URL", _urlBox), 0, 1);
         root.Controls.Add(Field("API Key", _apiKeyBox), 0, 2);
 
-        var keyHint = ModernUi.Label("Okul/demo icin anon key yeterli olur. Herkese dagitilacak gercek uygulamada service role key kullanma.", ModernUi.SmallFont, ModernUi.Muted);
+        var keyHint = ModernUi.Label("Okul/demo için anon key yeterli olur. Herkese dağıtılacak gerçek uygulamada service role key kullanma.", ModernUi.SmallFont, ModernUi.Muted);
         keyHint.Dock = DockStyle.Fill;
         keyHint.MaximumSize = new Size(590, 0);
         root.Controls.Add(keyHint, 0, 3);

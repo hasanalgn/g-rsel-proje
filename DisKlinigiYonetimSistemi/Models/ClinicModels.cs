@@ -153,6 +153,17 @@ public sealed class SystemLog
     public string Description { get; set; } = "";
 }
 
+public sealed class NotificationMessage
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string PatientId { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public string Title { get; set; } = "";
+    public string Body { get; set; } = "";
+    public string EmailTo { get; set; } = "";
+    public bool Read { get; set; }
+}
+
 public sealed class SupabaseSettings
 {
     public string Url { get; set; } = "";
@@ -171,5 +182,6 @@ public sealed class DataSnapshot
     public List<Radiograph> Radiographs { get; set; } = [];
     public List<TreatmentPlan> Treatments { get; set; } = [];
     public List<SystemLog> Logs { get; set; } = [];
+    public List<NotificationMessage> Notifications { get; set; } = [];
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }
